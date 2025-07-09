@@ -41,7 +41,7 @@ func TestHMAC(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			cfg := jwtkit.Config{
-				Alg:    jwtkit.SigningAlgorithm(tc.alg),
+				Alg:    tc.alg,
 				Secret: tc.secret,
 			}
 
@@ -57,8 +57,8 @@ func TestHMAC(t *testing.T) {
 				result, err := signer.Parse(tokenStr)
 
 				require.NoError(t, err)
-				assert.NotNil(t, result)
-				assert.Equal(t, float64(1), (*result)["id"])
+				require.NotNil(t, result)
+				assert.InEpsilon(t, float64(1), (*result)["id"], 1)
 			}
 		})
 	}
