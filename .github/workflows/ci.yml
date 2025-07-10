@@ -10,6 +10,10 @@ on:
       - master
       - dev
 
+permissions:
+  contents: read
+  security-events: write
+
 jobs:
   lint-check:
     name: golangci-lint-v2
