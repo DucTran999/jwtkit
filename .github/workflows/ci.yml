@@ -10,10 +10,6 @@ on:
       - master
       - dev
 
-permissions:
-  contents: read
-  security-events: write
-
 jobs:
   lint-check:
     name: golangci-lint-v2
@@ -54,8 +50,12 @@ jobs:
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
 
-  security:
+  snyk-security:
+    name: snyk-scanning
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
     steps:
       - uses: actions/checkout@v4
       - name: Run Snyk to check for vulnerabilities
