@@ -35,7 +35,6 @@ type Config struct {
 //   - RSA (RS*): Returns RSA private and public keys.
 func (c *Config) GetKeyPairs(alg jwt.SigningMethod) (any, any, error) {
 	switch alg.Alg() {
-
 	// HMAC algorithms use a single shared secret key
 	case jwt.SigningMethodHS256.Alg(), jwt.SigningMethodHS384.Alg(), jwt.SigningMethodHS512.Alg():
 		if len(c.Secret) == 0 {
