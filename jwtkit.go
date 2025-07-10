@@ -52,3 +52,19 @@ func (j *jwtImpl) Parse(tokenStr string) (*jwt.MapClaims, error) {
 	claims, _ := token.Claims.(jwt.MapClaims)
 	return &claims, nil
 }
+
+func (j *jwtImpl) ParseInto(tokenStr string, dest jwt.Claims) error {
+	token, err := jwt.ParseWithClaims(tokenStr, dest, func(t *jwt.Token) (any, error) {
+		// Validate that the token's algorithm matches our signer's algorithm
+		if t.Method.Alg() != j.method.Alg() {
+			return nil, ErrAlgorithmNotMatch
+		}
+		return j.verifyKey, nil
+	})
+
+	if err != nil || token == nil || !token.Valid {
+		return fmt.Errorf("%w: %s", ErrParseToken, err.Error())
+	}
+
+	return nil
+}
