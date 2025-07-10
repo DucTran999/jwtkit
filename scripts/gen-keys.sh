@@ -26,6 +26,34 @@ openssl genpkey -algorithm RSA -out "$RSA_PRIVATE_KEY" -pkeyopt rsa_keygen_bits:
 # Extract public key from private key
 openssl rsa -pubout -in "$RSA_PRIVATE_KEY" -out "$RSA_PUBLIC_KEY"
 
+# Set secure permissions
+chmod 600 "$RSA_PRIVATE_KEY"
+chmod 644 "$RSA_PUBLIC_KEY"
+
 echo "✅ RSA key pair generated:"
 echo "🔓 Public Key:  $RSA_PUBLIC_KEY"
 echo "🔒 Private Key: $RSA_PRIVATE_KEY"
+
+# Define ECDSA curves and output filenames
+declare -A ECDSA_CURVES=(
+    ["256"]="prime256v1" # ES256
+    ["384"]="secp384r1"  # ES384
+    ["512"]="secp521r1"  # ES512
+)
+
+# Generate ECDSA key pairs for all curves
+for bits in "${!ECDSA_CURVES[@]}"; do
+    curve="${ECDSA_CURVES[$bits]}"
+    priv_key="$KEY_DIR/ecdsa_${bits}_private.pem"
+    pub_key="$KEY_DIR/ecdsa_${bits}_public.pem"
+
+    # Generate private key
+    openssl ecparam -name "$curve" -genkey -noout -out "$priv_key"
+
+    # Extract public key
+    openssl ec -in "$priv_key" -pubout -out "$pub_key"
+
+    echo "✅ ECDSA-${bits} key pair generated using curve $curve:"
+    echo "🔓 Public Key:  $pub_key"
+    echo "🔒 Private Key: $priv_key"
+done

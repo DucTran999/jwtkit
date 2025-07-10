@@ -2,6 +2,7 @@ package jwtkit
 
 import (
 	"bytes"
+	"crypto/ecdsa"
 	"crypto/rsa"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -16,13 +17,16 @@ type Config struct {
 	// RSA Algorithm
 	RSAPrivate *rsa.PrivateKey
 	RSAPublic  *rsa.PublicKey
+
+	// ECDSA Algorithm
+	ESPrivate *ecdsa.PrivateKey
+	ESPublic  *ecdsa.PublicKey
 }
 
-// GetKeyPairs returns the appropriate key pair (private and public) for the given signing algorithm.
-//   - For HMAC (HS256, HS384, HS512), it returns the shared secret key for both signing and verification.
-//   - For RSA (RS256, etc.), it returns the private key for signing and the public key for verification.
-//
-// Returns an error if required keys are missing.
+// GetKeyPairs returns the appropriate key pair for the given JWT signing algorithm.
+//   - HMAC (HS*): Returns the same secret for signing and verification.
+//   - ECDSA (ES*): Returns ECDSA private and public keys.
+//   - RSA (RS*): Returns RSA private and public keys.
 func (c *Config) GetKeyPairs(alg jwt.SigningMethod) (any, any, error) {
 	switch alg.Alg() {
 	// HMAC algorithms use a single shared secret key
@@ -30,12 +34,18 @@ func (c *Config) GetKeyPairs(alg jwt.SigningMethod) (any, any, error) {
 		if len(c.Secret) == 0 {
 			return nil, nil, ErrMissingKey
 		}
-		// Trim any whitespace to avoid accidental padding
 		secret := bytes.TrimSpace(c.Secret)
 		return secret, secret, nil
 
+	// ECDSA algorithms use EC private/public key pair
+	case jwt.SigningMethodES256.Alg(), jwt.SigningMethodES384.Alg(), jwt.SigningMethodES512.Alg():
+		if c.ESPrivate == nil || c.ESPublic == nil {
+			return nil, nil, ErrMissingKey
+		}
+		return c.ESPrivate, c.ESPublic, nil
+
+	// RSA algorithms use RSA private/public key pair
 	default:
-		// For asymmetric algorithms like RSA
 		if c.RSAPublic == nil || c.RSAPrivate == nil {
 			return nil, nil, ErrMissingKey
 		}

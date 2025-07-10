@@ -1,6 +1,7 @@
 package testutil
 
 import (
+	"crypto/ecdsa"
 	"crypto/rsa"
 	"fmt"
 	"os"
@@ -31,6 +32,36 @@ func LoadRSAKey() (*rsa.PrivateKey, *rsa.PublicKey, error) {
 
 	// Parse the public key
 	verifyKey, err := jwt.ParseRSAPublicKeyFromPEM(pubPem)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to parse public key: %w", err)
+	}
+
+	return signKey, verifyKey, nil
+}
+
+// LoadECDSAKeys reads ECDSA private and public keys from PEM files and parses them.
+// Returns both keys or an error if any step fails.
+func LoadECDSAKeys(pubFile, privFile string) (*ecdsa.PrivateKey, *ecdsa.PublicKey, error) {
+	// Read the private key PEM file
+	privPem, err := os.ReadFile("./keys/" + privFile)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to read private key: %w", err)
+	}
+
+	// Parse the private key
+	signKey, err := jwt.ParseECPrivateKeyFromPEM(privPem)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to parse private key: %w", err)
+	}
+
+	// Read the public key PEM file
+	pubPem, err := os.ReadFile("./keys/" + pubFile)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to read public key: %w", err)
+	}
+
+	// Parse the public key
+	verifyKey, err := jwt.ParseECPublicKeyFromPEM(pubPem)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to parse public key: %w", err)
 	}

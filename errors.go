@@ -5,6 +5,9 @@ import (
 )
 
 var (
+	// ErrSign is returned when the JWT token signing process fails.
+	ErrSign = errors.New("jwtkit: failed to sign token")
+
 	// ErrParseToken is returned when the JWT token cannot be parsed or is malformed.
 	ErrParseToken = errors.New("jwtkit: failed to parse token")
 

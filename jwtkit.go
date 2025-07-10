@@ -33,7 +33,13 @@ func NewJWT(cfg Config) (JWT, error) {
 
 func (j *jwtImpl) Sign(claims jwt.Claims) (string, error) {
 	token := jwt.NewWithClaims(j.method, claims)
-	return token.SignedString(j.signKey)
+
+	signed, err := token.SignedString(j.signKey)
+	if err != nil {
+		return "", fmt.Errorf("%w: %w", ErrSign, err)
+	}
+
+	return signed, nil
 }
 
 func (j *jwtImpl) Parse(tokenStr string) (*jwt.MapClaims, error) {
