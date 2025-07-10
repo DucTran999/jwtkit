@@ -11,6 +11,74 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestParseInto(t *testing.T) {
+	key, err := os.ReadFile("./keys/secret.key")
+	require.NoError(t, err)
+
+	type testcase struct {
+		name        string
+		inputClaims testutil.MyCustomClaims
+		signFunc    func(t *testing.T) string
+		alg         jwtkit.SigningAlgorithm
+		expectedErr error
+	}
+
+	// Get default custom claims
+	claims := testutil.DefaultMyCustomClaims()
+	testcases := []testcase{
+		{
+			name: "parse successfully",
+			signFunc: func(t *testing.T) string {
+				t.Helper()
+				token, err := testutil.PrepareHMACToken(jwtkit.HS256, claims, key)
+				require.NoError(t, err)
+				return token
+			},
+		},
+		{
+			name: "different algorithm",
+			signFunc: func(t *testing.T) string {
+				t.Helper()
+				token, err := testutil.PrepareHMACToken(jwtkit.HS384, claims, key)
+				require.NoError(t, err)
+				return token
+			},
+			expectedErr: jwtkit.ErrParseToken,
+		},
+		{
+			name: "different key singed",
+			signFunc: func(t *testing.T) string {
+				t.Helper()
+				token, err := testutil.PrepareHMACToken(jwtkit.HS256, claims, []byte("different-key"))
+				require.NoError(t, err)
+				return token
+			},
+			expectedErr: jwtkit.ErrParseToken,
+		},
+	}
+
+	for _, tc := range testcases {
+		cfg := jwtkit.Config{
+			Alg:    jwtkit.HS256,
+			Secret: key,
+		}
+
+		signer, err := jwtkit.NewJWT(cfg)
+		require.NoError(t, err)
+
+		if tc.expectedErr == nil {
+			token := tc.signFunc(t)
+
+			// Test Parse Into
+			result := testutil.MyCustomClaims{}
+			err = signer.ParseInto(token, &result)
+
+			require.NoError(t, err)
+			assert.Equal(t, claims.ID, result.ID)
+		}
+	}
+}
+
 func TestParseGotError(t *testing.T) {
 	type testCase struct {
 		name        string

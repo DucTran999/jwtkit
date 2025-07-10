@@ -41,15 +41,11 @@ func main() {
 	}
 
 	// Parse token
-	parsed, err := signer.Parse(tokenStr)
+	parsed := MyClaims{}
+	err = signer.ParseInto(tokenStr, &parsed)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	val, ok := (*parsed)["user_id"]
-	if ok {
-		fmt.Println("UserID:", val)
-	} else {
-		fmt.Println("UserID is not found")
-	}
+	fmt.Println("UserID:", parsed.UserID)
 }
