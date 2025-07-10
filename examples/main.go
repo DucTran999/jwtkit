@@ -44,7 +44,10 @@ func main() {
 		log.Fatal(err)
 	}
 
-	val, _ := (*parsed)["user_id"]
-
-	fmt.Println("UserID:", val)
+	val, ok := (*parsed)["user_id"]
+	if ok {
+		fmt.Println("UserID:", val)
+	} else {
+		fmt.Println("UserID is not found")
+	}
 }

@@ -18,7 +18,7 @@ func PrepareHMACToken(alg jwtkit.SigningAlgorithm, claims jwt.Claims, signKey []
 
 	token, err := signer.Sign(claims)
 	if err != nil {
-		return "", nil
+		return "", err
 	}
 
 	return token, nil
