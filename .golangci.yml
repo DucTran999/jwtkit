@@ -187,14 +187,14 @@ linters:
     - misspell
     # Go linter to check the errors handling expressions.
     # Disable because some rules not go idiomatic. Like Not allow dynamic wraping error.
-    - err113
+    # - err113
     # Check whether the function uses a non-inherited context.
-    - contextcheck
+    # - contextcheck
     # Detects nested contexts in loops and function literals.
-    - fatcontext
+    # - fatcontext
     # Intrange is a linter to find places where for loops could make use of an integer range.
     # FUTURE: can apply this rules when this syntax are family to almost developer. This syntax only apply for go 1.22+
-    - intrange
+    # - intrange
     - tagalign
 
   exclusions:

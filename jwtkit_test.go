@@ -3,23 +3,81 @@ package jwtkit_test
 import (
 	"os"
 	"testing"
-	"time"
 
 	"github.com/DucTran999/jwtkit"
+	"github.com/DucTran999/jwtkit/test/testdata/testutil"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
+func TestParseGotError(t *testing.T) {
+	type testCase struct {
+		name        string
+		setupToken  func(t *testing.T) string
+		expectedErr error
+	}
+
+	key, err := os.ReadFile("./keys/secret.key")
+	require.NoError(t, err)
+
+	testcases := []testCase{
+		{
+			name:        "empty token",
+			setupToken:  func(t *testing.T) string { return "" },
+			expectedErr: jwtkit.ErrParseToken,
+		},
+		{
+			name:        "invalid token format",
+			setupToken:  func(t *testing.T) string { return "abc.xyx.213" },
+			expectedErr: jwtkit.ErrParseToken,
+		},
+		{
+			name: "different signing method",
+			setupToken: func(t *testing.T) string {
+				t.Helper()
+				token, err := testutil.PrepareHMACToken(jwtkit.HS384, testutil.DefaultClaims(), key)
+				require.NoError(t, err)
+				return token
+			},
+			expectedErr: jwtkit.ErrParseToken,
+		},
+		{
+			name: "different key sign",
+			setupToken: func(t *testing.T) string {
+				t.Helper()
+				token, err := testutil.PrepareHMACToken(jwtkit.HS256, testutil.DefaultClaims(), []byte("fake-key"))
+				require.NoError(t, err)
+				return token
+			},
+			expectedErr: jwtkit.ErrParseToken,
+		},
+	}
+
+	for _, tc := range testcases {
+		t.Run(tc.name, func(t *testing.T) {
+			// t.Parallel()
+			inputToken := tc.setupToken(t)
+
+			cfg := jwtkit.Config{
+				Alg:    jwtkit.HS256,
+				Secret: key,
+			}
+
+			signer, err := jwtkit.NewJWT(cfg)
+			require.NoError(t, err)
+
+			_, parseErr := signer.Parse(inputToken)
+			assert.ErrorIs(t, parseErr, tc.expectedErr)
+		})
+	}
+}
+
 func TestHMAC(t *testing.T) {
 	key, err := os.ReadFile("./keys/secret.key")
 	require.NoError(t, err)
 
-	claims := jwt.MapClaims{
-		"id":  1,
-		"iat": time.Now().Unix(),
-		"exp": time.Now().Add(time.Hour).Unix(),
-	}
+	claims := testutil.DefaultClaims()
 
 	type testCase struct {
 		name        string
@@ -58,7 +116,7 @@ func TestHMAC(t *testing.T) {
 
 				require.NoError(t, err)
 				require.NotNil(t, result)
-				assert.InEpsilon(t, float64(1), (*result)["id"], 1)
+				assert.Equal(t, "uuid-1", (*result)["id"])
 			}
 		})
 	}

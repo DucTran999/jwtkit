@@ -44,18 +44,11 @@ func (j *jwtImpl) Parse(tokenStr string) (*jwt.MapClaims, error) {
 		}
 		return j.verifyKey, nil
 	})
-	if err != nil {
-		return nil, fmt.Errorf("jwtkit: failed to parse token: %w", err)
+	if err != nil || token == nil || !token.Valid {
+		return nil, fmt.Errorf("%w: %s", ErrParseToken, err.Error())
 	}
 
-	if token == nil || !token.Valid {
-		return nil, ErrInvalidTokenSignature
-	}
-
-	claims, ok := token.Claims.(jwt.MapClaims)
-	if !ok {
-		return nil, ErrInvalidTokenClaimType
-	}
-
+	// The jwt.Parse internally always use MapClaims so this will always true
+	claims, _ := token.Claims.(jwt.MapClaims)
 	return &claims, nil
 }

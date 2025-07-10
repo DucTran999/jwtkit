@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -euo pipefail
+
 # Output directory
 KEY_DIR="./keys"
 
@@ -11,3 +13,5 @@ openssl rand -hex 32 >"$KEY_DIR/secret.key"
 
 # Optional: echo to confirm
 echo "✅ HMAC secret written to $KEY_DIR/secret.key"
+
+chmod 600 "$KEY_DIR/secret.key"
