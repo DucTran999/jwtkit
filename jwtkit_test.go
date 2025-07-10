@@ -1,6 +1,7 @@
 package jwtkit_test
 
 import (
+	"crypto/ecdsa"
 	"crypto/rsa"
 	"os"
 	"testing"
@@ -252,7 +253,7 @@ func TestRSA(t *testing.T) {
 			t.Parallel()
 
 			cfg := jwtkit.Config{
-				Alg:        jwtkit.RS256,
+				Alg:        tc.alg,
 				RSAPrivate: tc.signKey,
 				RSAPublic:  tc.verifyKey,
 			}
@@ -270,6 +271,143 @@ func TestRSA(t *testing.T) {
 
 				require.NoError(t, err)
 				assert.Equal(t, claims.UserID, parsed.UserID)
+			}
+		})
+	}
+}
+
+func TestECDSA(t *testing.T) {
+	claims := testutil.DefaultMyCustomClaims()
+
+	type testcase struct {
+		name             string
+		alg              jwtkit.SigningAlgorithm
+		loadKeyPairs     func(t *testing.T) (*ecdsa.PrivateKey, *ecdsa.PublicKey, error)
+		expectedErr      error
+		expectedSignErr  error
+		expectedParseErr error
+	}
+
+	testcases := []testcase{
+		{
+			name: "missing keys",
+			alg:  jwtkit.ES256,
+			loadKeyPairs: func(t *testing.T) (*ecdsa.PrivateKey, *ecdsa.PublicKey, error) {
+				return nil, nil, nil
+			},
+			expectedErr: jwtkit.ErrMissingKey,
+		},
+		{
+			name: "missing verify key",
+			alg:  jwtkit.ES256,
+			loadKeyPairs: func(t *testing.T) (*ecdsa.PrivateKey, *ecdsa.PublicKey, error) {
+				t.Helper()
+				signKey, _, err := testutil.LoadECDSAKeys(
+					"ecdsa_256_public.pem",
+					"ecdsa_256_private.pem",
+				)
+				require.NoError(t, err)
+				return signKey, nil, nil
+			},
+			expectedErr: jwtkit.ErrMissingKey,
+		},
+		{
+			name: "missing sign key",
+			alg:  jwtkit.ES256,
+			loadKeyPairs: func(t *testing.T) (*ecdsa.PrivateKey, *ecdsa.PublicKey, error) {
+				t.Helper()
+				_, verifyKey, err := testutil.LoadECDSAKeys(
+					"ecdsa_256_public.pem",
+					"ecdsa_256_private.pem",
+				)
+				require.NoError(t, err)
+				return nil, verifyKey, nil
+			},
+			expectedErr: jwtkit.ErrMissingKey,
+		},
+		{
+			name: "ecdsa256",
+			alg:  jwtkit.ES256,
+			loadKeyPairs: func(t *testing.T) (*ecdsa.PrivateKey, *ecdsa.PublicKey, error) {
+				t.Helper()
+				signKey, verifyKey, err := testutil.LoadECDSAKeys(
+					"ecdsa_256_public.pem",
+					"ecdsa_256_private.pem",
+				)
+				require.NoError(t, err)
+				return signKey, verifyKey, nil
+			},
+		},
+		{
+			name: "ecdsa256 wrong key ecdsa384",
+			alg:  jwtkit.ES256,
+			loadKeyPairs: func(t *testing.T) (*ecdsa.PrivateKey, *ecdsa.PublicKey, error) {
+				t.Helper()
+				signKey, verifyKey, err := testutil.LoadECDSAKeys(
+					"ecdsa_384_public.pem",
+					"ecdsa_384_private.pem",
+				)
+				require.NoError(t, err)
+				return signKey, verifyKey, nil
+			},
+			expectedSignErr:  jwtkit.ErrSign,
+			expectedParseErr: jwtkit.ErrParseToken,
+		},
+		{
+			name: "ecdsa256",
+			alg:  jwtkit.ES384,
+			loadKeyPairs: func(t *testing.T) (*ecdsa.PrivateKey, *ecdsa.PublicKey, error) {
+				t.Helper()
+				signKey, verifyKey, err := testutil.LoadECDSAKeys(
+					"ecdsa_384_public.pem",
+					"ecdsa_384_private.pem",
+				)
+				require.NoError(t, err)
+				return signKey, verifyKey, nil
+			},
+		},
+		{
+			name: "ecdsa512",
+			alg:  jwtkit.ES512,
+			loadKeyPairs: func(t *testing.T) (*ecdsa.PrivateKey, *ecdsa.PublicKey, error) {
+				t.Helper()
+				signKey, verifyKey, err := testutil.LoadECDSAKeys(
+					"ecdsa_512_public.pem",
+					"ecdsa_512_private.pem",
+				)
+				require.NoError(t, err)
+				return signKey, verifyKey, nil
+			},
+		},
+	}
+
+	for _, tc := range testcases {
+		t.Run(tc.name, func(t *testing.T) {
+			// t.Parallel()
+			signKey, verifyKey, err := tc.loadKeyPairs(t)
+			require.NoError(t, err)
+
+			cfg := jwtkit.Config{
+				Alg:       tc.alg,
+				ESPrivate: signKey,
+				ESPublic:  verifyKey,
+			}
+
+			signer, err := jwtkit.NewJWT(cfg)
+			require.ErrorIs(t, err, tc.expectedErr)
+
+			// Verify Sign and ParseInto
+			if tc.expectedErr == nil {
+				token, err := signer.Sign(claims)
+				require.ErrorIs(t, err, tc.expectedSignErr)
+
+				parsed := testutil.MyCustomClaims{}
+				err = signer.ParseInto(token, &parsed)
+				require.ErrorIs(t, err, tc.expectedParseErr)
+
+				if tc.expectedParseErr == nil {
+					assert.Equal(t, claims.UserID, parsed.UserID)
+				}
 			}
 		})
 	}

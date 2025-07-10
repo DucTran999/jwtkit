@@ -84,15 +84,17 @@ func main() {
 
 ## 🔐 Supported Algorithms
 
-| Algorithm | Status        |
-| --------- | ------------- |
-| HS256     | ✅ Yes        |
-| HS384     | ✅ Yes        |
-| HS512     | ✅ Yes        |
-| RS256     | ✅ Yes        |
-| RS384     | ✅ Yes        |
-| RS512     | ✅ Yes        |
-| ES256     | 🛠 In progress |
+| Algorithm | Status |
+| --------- | ------ |
+| HS256     | ✅ Yes |
+| HS384     | ✅ Yes |
+| HS512     | ✅ Yes |
+| RS256     | ✅ Yes |
+| RS384     | ✅ Yes |
+| RS512     | ✅ Yes |
+| ES256     | ✅ Yes |
+| ES384     | ✅ Yes |
+| ES512     | ✅ Yes |
 
 ---
 
