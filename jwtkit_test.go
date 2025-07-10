@@ -17,9 +17,7 @@ func TestParseInto(t *testing.T) {
 
 	type testcase struct {
 		name        string
-		inputClaims testutil.MyCustomClaims
 		signFunc    func(t *testing.T) string
-		alg         jwtkit.SigningAlgorithm
 		expectedErr error
 	}
 
