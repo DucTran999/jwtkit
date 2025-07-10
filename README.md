@@ -70,14 +70,13 @@ func main() {
 	}
 
 	// Parse token
-	parsed, err := signer.Parse(tokenStr)
+	parsed := MyClaims{}
+	err = signer.ParseInto(tokenStr, &parsed)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	val, _ := (*parsed)["user_id"]
-
-	fmt.Println("UserID:", val)
+	fmt.Println("UserID:", parsed.UserID)
 }
 ```
 
@@ -90,7 +89,9 @@ func main() {
 | HS256     | ✅ Yes        |
 | HS384     | ✅ Yes        |
 | HS512     | ✅ Yes        |
-| RS256     | 🛠 In progress |
+| RS256     | ✅ Yes        |
+| RS384     | ✅ Yes        |
+| RS512     | ✅ Yes        |
 | ES256     | 🛠 In progress |
 
 ---
