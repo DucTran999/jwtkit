@@ -57,7 +57,27 @@ for bits in "${!ECDSA_CURVES[@]}"; do
     chmod 600 "$priv_key"
     chmod 644 "$pub_key"
 
+    echo ""
     echo "✅ ECDSA-${bits} key pair generated using curve $curve:"
     echo "🔓 Public Key:  $pub_key"
     echo "🔒 Private Key: $priv_key"
 done
+
+# Generate EdDSA (Ed25519) key pair
+ED_PRIVATE_KEY="$KEY_DIR/ed25519_private.pem"
+ED_PUBLIC_KEY="$KEY_DIR/ed25519_public.pem"
+
+# Generate private key
+openssl genpkey -algorithm ED25519 -out "$ED_PRIVATE_KEY"
+
+# Extract public key
+openssl pkey -in "$ED_PRIVATE_KEY" -pubout -out "$ED_PUBLIC_KEY"
+
+# Set secure permissions
+chmod 600 "$ED_PRIVATE_KEY"
+chmod 644 "$ED_PUBLIC_KEY"
+
+echo ""
+echo "✅ EdDSA (Ed25519) key pair generated:"
+echo "🔓 Public Key:  $ED_PUBLIC_KEY"
+echo "🔒 Private Key: $ED_PRIVATE_KEY"

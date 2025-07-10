@@ -2,6 +2,7 @@ package jwtkit_test
 
 import (
 	"crypto/ecdsa"
+	"crypto/ed25519"
 	"crypto/rsa"
 	"os"
 	"testing"
@@ -383,7 +384,7 @@ func TestECDSA(t *testing.T) {
 
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
-			// t.Parallel()
+			t.Parallel()
 			signKey, verifyKey, err := tc.loadKeyPairs(t)
 			require.NoError(t, err)
 
@@ -408,6 +409,84 @@ func TestECDSA(t *testing.T) {
 				if tc.expectedParseErr == nil {
 					assert.Equal(t, claims.UserID, parsed.UserID)
 				}
+			}
+		})
+	}
+}
+
+func TestEdDSA(t *testing.T) {
+	claims := testutil.DefaultMyCustomClaims()
+
+	type testcase struct {
+		name         string
+		loadKeyPairs func(t *testing.T) (ed25519.PrivateKey, ed25519.PublicKey, error)
+		expectedErr  error
+	}
+
+	testcases := []testcase{
+		{
+			name: "missing keys",
+			loadKeyPairs: func(t *testing.T) (ed25519.PrivateKey, ed25519.PublicKey, error) {
+				return nil, nil, nil
+			},
+			expectedErr: jwtkit.ErrMissingKey,
+		},
+		{
+			name: "missing verify key",
+			loadKeyPairs: func(t *testing.T) (ed25519.PrivateKey, ed25519.PublicKey, error) {
+				t.Helper()
+				signKey, _, err := testutil.LoadEd25519Keys()
+				require.NoError(t, err)
+				return signKey, nil, nil
+			},
+			expectedErr: jwtkit.ErrMissingKey,
+		},
+		{
+			name: "missing sign key",
+			loadKeyPairs: func(t *testing.T) (ed25519.PrivateKey, ed25519.PublicKey, error) {
+				t.Helper()
+				_, verifyKey, err := testutil.LoadEd25519Keys()
+				require.NoError(t, err)
+				return nil, verifyKey, nil
+			},
+			expectedErr: jwtkit.ErrMissingKey,
+		},
+		{
+			name: "EdDSA",
+			loadKeyPairs: func(t *testing.T) (ed25519.PrivateKey, ed25519.PublicKey, error) {
+				t.Helper()
+				signKey, verifyKey, err := testutil.LoadEd25519Keys()
+				require.NoError(t, err)
+				return signKey, verifyKey, nil
+			},
+		},
+	}
+
+	for _, tc := range testcases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			signKey, verifyKey, err := tc.loadKeyPairs(t)
+			require.NoError(t, err)
+
+			cfg := jwtkit.Config{
+				Alg:       jwtkit.EdDSA,
+				EDPrivate: signKey,
+				EDPublic:  verifyKey,
+			}
+
+			signer, err := jwtkit.NewJWT(cfg)
+			require.ErrorIs(t, err, tc.expectedErr)
+
+			// Verify Sign and ParseInto
+			if tc.expectedErr == nil {
+				token, err := signer.Sign(claims)
+				require.NoError(t, err)
+
+				parsed := testutil.MyCustomClaims{}
+				err = signer.ParseInto(token, &parsed)
+				require.NoError(t, err)
+
+				assert.Equal(t, claims.UserID, parsed.UserID)
 			}
 		})
 	}

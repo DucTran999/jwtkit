@@ -49,13 +49,9 @@ var jwtMethods = map[SigningAlgorithm]jwt.SigningMethod{
 }
 
 // ToJWTMethod converts a custom SigningAlgorithm to its corresponding jwt.SigningMethod.
-//
-// It normalizes the input (uppercase, trimmed), then looks up the algorithm in the jwtMethods map.
-//   - Example: hs256 -> HS256
-//
 // Returns an error if the algorithm is not supported.
 func (a SigningAlgorithm) ToJWTMethod() (jwt.SigningMethod, error) {
-	cleaned := SigningAlgorithm(strings.ToUpper(strings.TrimSpace(string(a))))
+	cleaned := SigningAlgorithm(strings.TrimSpace(string(a)))
 	if method, ok := jwtMethods[cleaned]; ok {
 		return method, nil
 	}

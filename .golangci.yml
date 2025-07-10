@@ -49,7 +49,7 @@ linters:
     - gochecknoinits
     # Computes and checks the cyclomatic complexity of functions [fast: true, auto-fix: false]
     # not used because cyclop also checks complexity of package
-    # - gocyclo
+    - cyclop
     # Check if comments end in a period [fast: true, auto-fix: true]
     # FUTURE: checks if comments are written as specified
     # - godot
