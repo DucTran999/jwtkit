@@ -56,24 +56,30 @@ func TestParseInto(t *testing.T) {
 	}
 
 	for _, tc := range testcases {
-		cfg := jwtkit.Config{
-			Alg:    jwtkit.HS256,
-			Secret: key,
-		}
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			cfg := jwtkit.Config{
+				Alg:    jwtkit.HS256,
+				Secret: key,
+			}
 
-		signer, err := jwtkit.NewJWT(cfg)
-		require.NoError(t, err)
+			signer, err := jwtkit.NewJWT(cfg)
+			require.NoError(t, err)
 
-		if tc.expectedErr == nil {
 			token := tc.signFunc(t)
 
 			// Test Parse Into
 			result := testutil.MyCustomClaims{}
-			err = signer.ParseInto(token, &result)
+			parsedErr := signer.ParseInto(token, &result)
 
-			require.NoError(t, err)
-			assert.Equal(t, claims.ID, result.ID)
-		}
+			// Assert
+			if tc.expectedErr == nil {
+				require.NoError(t, parsedErr)
+				assert.Equal(t, claims.UserID, result.UserID)
+			} else {
+				require.ErrorIs(t, parsedErr, tc.expectedErr)
+			}
+		})
 	}
 }
 
