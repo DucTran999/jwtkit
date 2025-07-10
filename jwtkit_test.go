@@ -1,6 +1,7 @@
 package jwtkit_test
 
 import (
+	"crypto/rsa"
 	"os"
 	"testing"
 
@@ -189,6 +190,86 @@ func TestHMAC(t *testing.T) {
 				require.NoError(t, err)
 				require.NotNil(t, result)
 				assert.Equal(t, "uuid-1", (*result)["id"])
+			}
+		})
+	}
+}
+
+func TestRSA(t *testing.T) {
+	signKey, verifyKey, err := testutil.LoadRSAKey()
+	require.NoError(t, err)
+
+	claims := testutil.DefaultMyCustomClaims()
+
+	type testcase struct {
+		name        string
+		alg         jwtkit.SigningAlgorithm
+		signKey     *rsa.PrivateKey
+		verifyKey   *rsa.PublicKey
+		expectedErr error
+	}
+
+	testcases := []testcase{
+		{
+			name:        "missing keys",
+			alg:         jwtkit.RS256,
+			expectedErr: jwtkit.ErrMissingKey,
+		},
+		{
+			name:        "missing verify key",
+			alg:         jwtkit.RS256,
+			signKey:     signKey,
+			expectedErr: jwtkit.ErrMissingKey,
+		},
+		{
+			name:        "missing sign key",
+			alg:         jwtkit.RS256,
+			verifyKey:   verifyKey,
+			expectedErr: jwtkit.ErrMissingKey,
+		},
+		{
+			name:      "rsa256",
+			alg:       jwtkit.RS256,
+			signKey:   signKey,
+			verifyKey: verifyKey,
+		},
+		{
+			name:      "rsa384",
+			alg:       jwtkit.RS384,
+			signKey:   signKey,
+			verifyKey: verifyKey,
+		},
+		{
+			name:      "rsa512",
+			alg:       jwtkit.RS512,
+			signKey:   signKey,
+			verifyKey: verifyKey,
+		},
+	}
+
+	for _, tc := range testcases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			cfg := jwtkit.Config{
+				Alg:        jwtkit.RS256,
+				RSAPrivate: tc.signKey,
+				RSAPublic:  tc.verifyKey,
+			}
+
+			signer, err := jwtkit.NewJWT(cfg)
+			require.ErrorIs(t, err, tc.expectedErr)
+
+			// Verify Sign and ParseInto
+			if tc.expectedErr == nil {
+				token, err := signer.Sign(claims)
+				require.NoError(t, err)
+
+				parsed := testutil.MyCustomClaims{}
+				err = signer.ParseInto(token, &parsed)
+
+				require.NoError(t, err)
+				assert.Equal(t, claims.UserID, parsed.UserID)
 			}
 		})
 	}
