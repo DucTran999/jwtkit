@@ -53,6 +53,10 @@ for bits in "${!ECDSA_CURVES[@]}"; do
     # Extract public key
     openssl ec -in "$priv_key" -pubout -out "$pub_key"
 
+    # Set secure permissions
+    chmod 600 "$priv_key"
+    chmod 644 "$pub_key"
+
     echo "✅ ECDSA-${bits} key pair generated using curve $curve:"
     echo "🔓 Public Key:  $pub_key"
     echo "🔒 Private Key: $priv_key"
