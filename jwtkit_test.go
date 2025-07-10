@@ -193,3 +193,49 @@ func TestHMAC(t *testing.T) {
 		})
 	}
 }
+
+func TestRSA(t *testing.T) {
+	privPem, err := os.ReadFile("./keys/rsa_private.pem")
+	require.NoError(t, err)
+	signKey, err := jwt.ParseRSAPrivateKeyFromPEM(privPem)
+	require.NoError(t, err)
+
+	pubPem, err := os.ReadFile("./keys/rsa_public.pem")
+	require.NoError(t, err)
+	verifyKey, err := jwt.ParseRSAPublicKeyFromPEM(pubPem)
+	require.NoError(t, err)
+
+	claims := testutil.DefaultMyCustomClaims()
+
+	t.Run("rsa happy case", func(t *testing.T) {
+		t.Parallel()
+		cfg := jwtkit.Config{
+			Alg:        jwtkit.RS256,
+			RSAPrivate: signKey,
+			RSAPublic:  verifyKey,
+		}
+
+		signer, err := jwtkit.NewJWT(cfg)
+		require.NoError(t, err)
+
+		token, err := signer.Sign(claims)
+		require.NoError(t, err)
+
+		parsed := testutil.MyCustomClaims{}
+		err = signer.ParseInto(token, &parsed)
+
+		require.NoError(t, err)
+		assert.Equal(t, claims.UserID, parsed.UserID)
+	})
+
+	t.Run("rsa missing key", func(t *testing.T) {
+		t.Parallel()
+		cfg := jwtkit.Config{
+			Alg:        jwtkit.RS256,
+			RSAPrivate: signKey,
+		}
+
+		_, err := jwtkit.NewJWT(cfg)
+		require.ErrorIs(t, err, jwtkit.ErrMissingKey)
+	})
+}
